@@ -204,7 +204,7 @@ GA4 Property ID：209293188
     const res = await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: history })
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, system, messages: history })
     });
     const data = await res.json();
     reply = (data.content || []).map(c => c.text || '').join('') || '發生錯誤，請稍後再試。';
