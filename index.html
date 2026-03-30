@@ -227,7 +227,7 @@ GA4 Property ID：209293188
 }
 
 const params = new URLSearchParams(location.search);
-if (params.get('auth') === 'success') { history.replaceState({}, '', '/'); checkAuth(); }
+if (params.get('auth') === 'success') { try { window.history.replaceState({}, '', '/'); } catch(e) {} checkAuth(); }
 checkAuth();
 </script>
 </body>
