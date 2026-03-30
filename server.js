@@ -31,7 +31,9 @@ function getSession(req) {
 function createSession(res, data) {
   const sid = crypto.randomBytes(32).toString('hex');
   sessions[sid] = data;
-  res.setHeader('Set-Cookie', `session=${sid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
+  const isHttps = process.env.REDIRECT_URI && process.env.REDIRECT_URI.startsWith('https');
+  const secureFlag = isHttps ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `session=${sid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${secureFlag}`);
   return sid;
 }
 
