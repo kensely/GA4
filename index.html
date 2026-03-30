@@ -14,7 +14,6 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; display: flex; flex-direction: column; }
-
   .topbar { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .logo { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); }
@@ -24,25 +23,17 @@
   .auth-dot.ok { background: var(--accent2); }
   .login-btn { background: #4285f4; border: none; border-radius: 8px; padding: 7px 16px; color: #fff; font-size: 13px; font-family: var(--font); cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .login-btn:hover { opacity: 0.9; }
-  .login-btn svg { width: 14px; height: 14px; }
-
   .login-wall { flex: 1; display: flex; align-items: center; justify-content: center; }
   .login-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 16px; padding: 40px 48px; text-align: center; max-width: 360px; }
   .login-card h2 { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
   .login-card p { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
   .login-card .login-btn { width: 100%; justify-content: center; padding: 11px; font-size: 14px; }
-
   .main { display: none; flex: 1; flex-direction: column; height: calc(100vh - 53px); }
   .main.visible { display: flex; }
-
   .source-bar { padding: 12px 24px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .src-btn { padding: 5px 14px; font-size: 12px; border-radius: 6px; border: 0.5px solid var(--border2); background: none; color: var(--muted); cursor: pointer; font-family: var(--font); transition: all 0.15s; }
-  .src-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
-
   .chat-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
   .chat-area::-webkit-scrollbar { width: 4px; }
   .chat-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
   .bubble-wrap { display: flex; gap: 10px; }
   .bubble-wrap.user { flex-direction: row-reverse; }
   .avatar { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
@@ -51,21 +42,22 @@
   .bubble { max-width: 680px; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.7; }
   .bubble-wrap.user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
   .bubble-wrap.ai .bubble { background: var(--surface); border: 0.5px solid var(--border); border-bottom-left-radius: 4px; }
-
   .query-block { margin-top: 10px; background: var(--bg); border: 0.5px solid var(--border2); border-radius: 8px; overflow: hidden; }
-  .query-header { padding: 6px 12px; font-size: 11px; color: var(--muted); border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; }
+  .query-header { padding: 6px 12px; font-size: 11px; color: var(--muted); border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .query-body { padding: 12px; font-family: var(--mono); font-size: 12px; color: #b0e0c8; line-height: 1.7; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
   .copy-btn { font-size: 11px; background: none; border: 0.5px solid var(--border2); color: var(--muted); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-family: var(--font); }
-
+  .result-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .result-table th { padding: 6px 10px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 0.5px solid var(--border); }
+  .result-table td { padding: 7px 10px; border-bottom: 0.5px solid var(--border2); }
+  .result-table tr:last-child td { border-bottom: none; }
   .tag { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
   .tag-ga4 { background: rgba(124,110,245,0.15); color: #a89cf7; border: 0.5px solid rgba(124,110,245,0.3); }
-
+  .tag-data { background: rgba(93,224,176,0.12); color: #5de0b0; border: 0.5px solid rgba(93,224,176,0.25); }
   .thinking { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .dots span { animation: blink 1.2s infinite; }
   .dots span:nth-child(2) { animation-delay: 0.2s; }
   .dots span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
-
   .input-area { padding: 16px 24px 20px; border-top: 0.5px solid var(--border); flex-shrink: 0; }
   .quick-prompts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .qp { font-size: 12px; padding: 5px 10px; border-radius: 6px; background: var(--surface2); border: 0.5px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.15s; }
@@ -80,13 +72,12 @@
 </style>
 </head>
 <body>
-
 <div class="topbar">
   <div class="logo"><div class="logo-dot"></div>GA4 分析助理</div>
   <div class="auth-row">
     <div class="auth-status"><span class="auth-dot" id="auth-dot"></span><span id="auth-text">未登入</span></div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">
-      <svg viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+      <svg viewBox="0 0 18 18" fill="none" width="14" height="14"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
       登入 Google
     </button>
   </div>
@@ -96,8 +87,8 @@
   <div class="login-card">
     <h2>GA4 分析助理</h2>
     <p>請先用你的 Google 帳號登入，授權存取 GA4 資料。</p>
-    <button class="login-btn" onclick="doLogin()">
-      <svg viewBox="0 0 18 18" fill="none" style="width:16px;height:16px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+    <button class="login-btn" onclick="doLogin()" style="width:100%;justify-content:center;padding:11px;font-size:14px;">
+      <svg viewBox="0 0 18 18" fill="none" width="16" height="16"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
       使用 Google 帳號登入
     </button>
   </div>
@@ -106,23 +97,23 @@
 <div class="main" id="main">
   <div class="source-bar">
     <span style="font-size:12px;color:var(--muted);margin-right:4px;">資料來源：</span>
-    <button class="src-btn active">GA4 Data API</button>
+    <button class="src-btn active" style="padding:5px 14px;font-size:12px;border-radius:6px;border:0.5px solid rgba(255,255,255,0.14);background:var(--accent);color:#fff;cursor:pointer;font-family:var(--font);">GA4 Data API</button>
   </div>
   <div class="chat-area" id="chat-area">
     <div class="bubble-wrap ai">
       <div class="avatar ai">AI</div>
       <div class="bubble">
         你好！我是 GA4 分析助理，已連線到 Property <strong style="color:var(--accent2)">209293188</strong>。<br><br>
-        直接用中文問我任何 GA4 資料問題吧！
+        直接用中文問我任何 GA4 資料問題，我會幫你查詢真實資料並解讀！
       </div>
     </div>
   </div>
   <div class="input-area">
     <div class="quick-prompts">
-      <div class="qp" onclick="usePrompt('過去 30 天各頁面瀏覽次數排行前 10')">📄 頁面排行</div>
-      <div class="qp" onclick="usePrompt('本週新用戶來自哪些國家？')">🌍 用戶來源</div>
-      <div class="qp" onclick="usePrompt('過去 7 天各裝置類型的工作階段數與跳出率')">📱 裝置分析</div>
-      <div class="qp" onclick="usePrompt('上個月轉換事件排行')">🎯 轉換事件</div>
+      <div class="qp" onclick="usePrompt('過去 30 天各頁面瀏覽次數排行前 10')">頁面排行</div>
+      <div class="qp" onclick="usePrompt('本週新用戶來自哪些國家？')">用戶來源</div>
+      <div class="qp" onclick="usePrompt('過去 7 天各裝置類型的工作階段數與跳出率')">裝置分析</div>
+      <div class="qp" onclick="usePrompt('今天的總人數')">今日人數</div>
     </div>
     <div class="input-row">
       <textarea class="chat-input" id="chat-input" placeholder="用中文問任何 GA4 資料問題..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
@@ -134,7 +125,7 @@
 </div>
 
 <script>
-let history = [];
+let chatHistory = [];
 
 async function checkAuth() {
   try {
@@ -151,7 +142,6 @@ async function checkAuth() {
 }
 
 function doLogin() { window.location.href = '/auth/login'; }
-
 function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 function usePrompt(q) { document.getElementById('chat-input').value = q; document.getElementById('chat-input').focus(); }
@@ -172,6 +162,29 @@ function addBubble(role, html) {
   return bub;
 }
 
+function formatGA4Result(data) {
+  if (data.error) return `<span style="color:#f06060">GA4 錯誤：${data.error.message || JSON.stringify(data.error)}</span>`;
+  if (!data.rows || data.rows.length === 0) return '<span style="color:var(--muted)">查無資料</span>';
+
+  const dimHeaders = (data.dimensionHeaders || []).map(h => h.name);
+  const metHeaders = (data.metricHeaders || []).map(h => h.name);
+  const allHeaders = [...dimHeaders, ...metHeaders];
+
+  let html = '<div style="overflow-x:auto"><table class="result-table"><thead><tr>';
+  allHeaders.forEach(h => { html += `<th>${h}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  data.rows.slice(0, 20).forEach(row => {
+    html += '<tr>';
+    (row.dimensionValues || []).forEach(v => { html += `<td>${v.value}</td>`; });
+    (row.metricValues || []).forEach(v => { html += `<td style="text-align:right">${Number(v.value).toLocaleString()}</td>`; });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  if (data.rowCount > 20) html += `<div style="font-size:11px;color:var(--muted);margin-top:4px">共 ${data.rowCount} 筆，顯示前 20 筆</div>`;
+  return html;
+}
+
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const q = input.value.trim();
@@ -187,42 +200,65 @@ async function sendMessage() {
   thinkWrap.innerHTML = `<div class="avatar ai">AI</div><div class="bubble thinking">分析中 <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>`;
   area.appendChild(thinkWrap); area.scrollTop = area.scrollHeight;
 
-  const system = `你是 GA4 資料分析專家助理。使用繁體中文回答。
-GA4 Property ID：209293188
-當使用者提問時：
-1. 判斷需要哪些 GA4 維度和指標
-2. 產生對應的 API request body，用 [Q]...[/Q] 包起來
-3. 說明這個查詢會回傳什麼資料
-4. 提供解讀建議
-常用維度：date, pagePath, deviceCategory, country, sessionSource, eventName
-常用指標：sessions, activeUsers, newUsers, screenPageViews, bounceRate, averageSessionDuration, conversions`;
+  const today = new Date().toISOString().slice(0,10);
+  const system = `你是 GA4 資料分析助理，可以直接查詢真實 GA4 資料並解讀結果。
+GA4 Property ID：209293188，今天日期：${today}
 
-  history.push({ role: 'user', content: q });
+當使用者提問時，你必須：
+1. 判斷需要哪些 GA4 維度和指標
+2. 輸出一個 JSON 格式的 API request body，用 [Q] 和 [/Q] 包起來，例如：
+[Q]
+{"dimensions":[{"name":"date"}],"metrics":[{"name":"activeUsers"}],"dateRanges":[{"startDate":"${today}","endDate":"${today}"}]}
+[/Q]
+3. 系統會自動執行查詢並把真實資料顯示給使用者
+4. 根據真實資料結果提供分析和洞察
+
+常用維度：date, pagePath, deviceCategory, country, city, sessionSource, sessionMedium, eventName
+常用指標：sessions, activeUsers, newUsers, screenPageViews, bounceRate, averageSessionDuration, conversions, eventCount
+
+重要：一定要輸出 [Q]...[/Q] 格式，否則無法查詢真實資料。使用繁體中文回答。`;
+
+  chatHistory.push({ role: 'user', content: q });
 
   let reply = '';
   try {
     const res = await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, system, messages: history })
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, system, messages: chatHistory })
     });
     const data = await res.json();
     reply = (data.content || []).map(c => c.text || '').join('') || '發生錯誤，請稍後再試。';
   } catch(e) { reply = '連線錯誤：' + e.message; }
 
-  history.push({ role: 'assistant', content: reply });
+  chatHistory.push({ role: 'assistant', content: reply });
   document.getElementById('thinking')?.remove();
 
-  let display = reply;
-  let queryHtml = '';
+  // 擷取查詢語句
   const m = reply.match(/\[Q\]([\s\S]*?)\[\/Q\]/);
+  let display = reply.replace(/\[Q\][\s\S]*?\[\/Q\]/g, '').trim();
+  let queryHtml = '';
+  let resultHtml = '';
+
   if (m) {
     const code = m[1].trim();
-    display = display.replace(/\[Q\][\s\S]*?\[\/Q\]/, '').trim();
-    queryHtml = `<div class="query-block"><div class="query-header"><span>GA4 API Request</span><button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(code)})">複製</button></div><div class="query-body">${code.replace(/</g,'&lt;')}</div></div>`;
+    queryHtml = `<div class="query-block"><div class="query-header"><span>GA4 查詢</span><button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(code)})">複製</button></div><div class="query-body">${code.replace(/</g,'&lt;')}</div></div>`;
+
+    // 自動呼叫 GA4 API
+    try {
+      const ga4Res = await fetch('/api/ga4/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: code
+      });
+      const ga4Data = await ga4Res.json();
+      resultHtml = `<div style="margin-top:10px"><span class="tag tag-data">真實資料</span>${formatGA4Result(ga4Data)}</div>`;
+    } catch(e) {
+      resultHtml = `<div style="margin-top:8px;font-size:12px;color:#f06060">查詢失敗：${e.message}</div>`;
+    }
   }
 
-  addBubble('ai', `<span class="tag tag-ga4">GA4</span> ${display.replace(/\n/g,'<br>')}${queryHtml}`);
+  addBubble('ai', `<span class="tag tag-ga4">GA4</span> ${display.replace(/\n/g,'<br>')}${queryHtml}${resultHtml}`);
   btn.disabled = false;
 }
 
