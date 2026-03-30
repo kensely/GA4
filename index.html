@@ -134,7 +134,6 @@
 </div>
 
 <script>
-const ANTHROPIC_KEY = 'YOUR_ANTHROPIC_KEY'; // 部署後在 Render 環境變數設定
 let history = [];
 
 async function checkAuth() {
@@ -202,13 +201,13 @@ GA4 Property ID：209293188
 
   let reply = '';
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/ask', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, system, messages: history })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: history })
     });
     const data = await res.json();
-    reply = (data.content || []).map(c => c.text || '').join('') || '請在 Render 環境變數設定 ANTHROPIC_KEY。';
+    reply = (data.content || []).map(c => c.text || '').join('') || '發生錯誤，請稍後再試。';
   } catch(e) { reply = '連線錯誤：' + e.message; }
 
   history.push({ role: 'assistant', content: reply });
@@ -228,9 +227,7 @@ GA4 Property ID：209293188
 }
 
 const params = new URLSearchParams(location.search);
-if (params.get('auth') === 'success') {
-  try { window.history.replaceState({}, '', '/'); } catch(e) {}
-}
+if (params.get('auth') === 'success') { history.replaceState({}, '', '/'); checkAuth(); }
 checkAuth();
 </script>
 </body>
