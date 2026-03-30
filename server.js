@@ -1,5 +1,5 @@
 /**
- * GA4 分析後端 — OAuth + Cookie Session 版本
+ * GA4 分析後端 — OAuth + Cookie Session + Anthropic Proxy 版本
  */
 
 const express = require('express');
@@ -16,9 +16,9 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:8080/auth/callback';
 const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID || '209293188';
+const ANTHROPIC_KEY = process.env.ANTHROPIC_KEY;
 const PORT = process.env.PORT || 8080;
 
-// Session 存儲
 const sessions = {};
 
 function getSession(req) {
@@ -31,15 +31,15 @@ function getSession(req) {
 function createSession(res, data) {
   const sid = crypto.randomBytes(32).toString('hex');
   sessions[sid] = data;
-  const isHttps = process.env.REDIRECT_URI && process.env.REDIRECT_URI.startsWith('https');
+  const isHttps = REDIRECT_URI && REDIRECT_URI.startsWith('https');
   const secureFlag = isHttps ? '; Secure' : '';
   res.setHeader('Set-Cookie', `session=${sid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${secureFlag}`);
   return sid;
 }
 
-function httpsRequest(options, body) {
+function httpsRequest(hostname, reqPath, method, headers, body) {
   return new Promise((resolve, reject) => {
-    const req = https.request(options, res => {
+    const req = https.request({ hostname, path: reqPath, method, headers }, res => {
       let data = '';
       res.on('data', d => data += d);
       res.on('end', () => {
@@ -53,6 +53,7 @@ function httpsRequest(options, body) {
   });
 }
 
+// ── OAuth ─────────────────────────────────────────────────
 app.get('/auth/login', (req, res) => {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -68,26 +69,15 @@ app.get('/auth/login', (req, res) => {
 app.get('/auth/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).send('缺少授權碼');
-
   const body = new URLSearchParams({
-    code,
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    redirect_uri: REDIRECT_URI,
-    grant_type: 'authorization_code',
+    code, client_id: CLIENT_ID, client_secret: CLIENT_SECRET,
+    redirect_uri: REDIRECT_URI, grant_type: 'authorization_code',
   }).toString();
-
   try {
-    const data = await httpsRequest({
-      hostname: 'oauth2.googleapis.com',
-      path: '/token',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': Buffer.byteLength(body),
-      },
+    const data = await httpsRequest('oauth2.googleapis.com', '/token', 'POST', {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(body),
     }, body);
-
     if (data.access_token) {
       createSession(res, {
         access_token: data.access_token,
@@ -98,9 +88,7 @@ app.get('/auth/callback', async (req, res) => {
     } else {
       res.status(400).send(`授權失敗: ${JSON.stringify(data)}`);
     }
-  } catch (e) {
-    res.status(500).send(`錯誤: ${e.message}`);
-  }
+  } catch (e) { res.status(500).send(`錯誤: ${e.message}`); }
 });
 
 app.get('/auth/status', (req, res) => {
@@ -110,53 +98,59 @@ app.get('/auth/status', (req, res) => {
 
 async function getValidToken(req) {
   const session = getSession(req);
-  if (!session) throw new Error('尚未登入，請先點選「登入 Google」');
+  if (!session) throw new Error('尚未登入');
   if (session.access_token && Date.now() < session.expiry) return session.access_token;
-  if (!session.refresh_token) throw new Error('Session 已過期，請重新登入');
-
+  if (!session.refresh_token) throw new Error('請重新登入');
   const body = new URLSearchParams({
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    refresh_token: session.refresh_token,
-    grant_type: 'refresh_token',
+    client_id: CLIENT_ID, client_secret: CLIENT_SECRET,
+    refresh_token: session.refresh_token, grant_type: 'refresh_token',
   }).toString();
-
-  const data = await httpsRequest({
-    hostname: 'oauth2.googleapis.com',
-    path: '/token',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(body),
-    },
+  const data = await httpsRequest('oauth2.googleapis.com', '/token', 'POST', {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Length': Buffer.byteLength(body),
   }, body);
-
-  if (!data.access_token) throw new Error('Token 更新失敗，請重新登入');
+  if (!data.access_token) throw new Error('Token 更新失敗');
   session.access_token = data.access_token;
   session.expiry = Date.now() + (data.expires_in - 60) * 1000;
   return data.access_token;
 }
 
+// ── GA4 API ───────────────────────────────────────────────
 app.post('/api/ga4/report', async (req, res) => {
   try {
     const token = await getValidToken(req);
     const payload = JSON.stringify(req.body);
-    const result = await httpsRequest({
-      hostname: 'analyticsdata.googleapis.com',
-      path: `/v1beta/properties/${GA4_PROPERTY_ID}:runReport`,
-      method: 'POST',
-      headers: {
+    const result = await httpsRequest('analyticsdata.googleapis.com',
+      `/v1beta/properties/${GA4_PROPERTY_ID}:runReport`, 'POST', {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload),
-      },
-    }, payload);
+      }, payload);
     res.json(result);
-  } catch (e) {
-    res.status(401).json({ error: e.message });
-  }
+  } catch (e) { res.status(401).json({ error: e.message }); }
 });
 
+// ── Anthropic API Proxy ───────────────────────────────────
+app.post('/api/ask', async (req, res) => {
+  try {
+    const { messages, system } = req.body;
+    const payload = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      system,
+      messages,
+    });
+    const result = await httpsRequest('api.anthropic.com', '/v1/messages', 'POST', {
+      'x-api-key': ANTHROPIC_KEY,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    }, payload);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── 健康檢查 + 前端 ───────────────────────────────────────
 app.get('/health', (req, res) => {
   const session = getSession(req);
   res.json({ status: 'ok', loggedIn: !!(session && session.access_token), propertyId: GA4_PROPERTY_ID });
