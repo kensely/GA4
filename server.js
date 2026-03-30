@@ -1,7 +1,3 @@
-/**
- * GA4 分析後端 — OAuth + Cookie Session + Anthropic Proxy 版本
- */
-
 const express = require('express');
 const cors = require('cors');
 const https = require('https');
@@ -31,15 +27,15 @@ function getSession(req) {
 function createSession(res, data) {
   const sid = crypto.randomBytes(32).toString('hex');
   sessions[sid] = data;
-  const isHttps = REDIRECT_URI && REDIRECT_URI.startsWith('https');
+  const isHttps = process.env.REDIRECT_URI && process.env.REDIRECT_URI.startsWith('https');
   const secureFlag = isHttps ? '; Secure' : '';
   res.setHeader('Set-Cookie', `session=${sid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${secureFlag}`);
   return sid;
 }
 
-function httpsRequest(hostname, reqPath, method, headers, body) {
+function httpsRequest(options, body) {
   return new Promise((resolve, reject) => {
-    const req = https.request({ hostname, path: reqPath, method, headers }, res => {
+    const req = https.request(options, res => {
       let data = '';
       res.on('data', d => data += d);
       res.on('end', () => {
@@ -53,7 +49,6 @@ function httpsRequest(hostname, reqPath, method, headers, body) {
   });
 }
 
-// ── OAuth ─────────────────────────────────────────────────
 app.get('/auth/login', (req, res) => {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -74,9 +69,9 @@ app.get('/auth/callback', async (req, res) => {
     redirect_uri: REDIRECT_URI, grant_type: 'authorization_code',
   }).toString();
   try {
-    const data = await httpsRequest('oauth2.googleapis.com', '/token', 'POST', {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(body),
+    const data = await httpsRequest({
+      hostname: 'oauth2.googleapis.com', path: '/token', method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) },
     }, body);
     if (data.access_token) {
       createSession(res, {
@@ -98,64 +93,62 @@ app.get('/auth/status', (req, res) => {
 
 async function getValidToken(req) {
   const session = getSession(req);
-  if (!session) throw new Error('尚未登入');
+  if (!session) throw new Error('尚未登入，請先點選「登入 Google」');
   if (session.access_token && Date.now() < session.expiry) return session.access_token;
-  if (!session.refresh_token) throw new Error('請重新登入');
+  if (!session.refresh_token) throw new Error('Session 已過期，請重新登入');
   const body = new URLSearchParams({
     client_id: CLIENT_ID, client_secret: CLIENT_SECRET,
     refresh_token: session.refresh_token, grant_type: 'refresh_token',
   }).toString();
-  const data = await httpsRequest('oauth2.googleapis.com', '/token', 'POST', {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Content-Length': Buffer.byteLength(body),
+  const data = await httpsRequest({
+    hostname: 'oauth2.googleapis.com', path: '/token', method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) },
   }, body);
-  if (!data.access_token) throw new Error('Token 更新失敗');
+  if (!data.access_token) throw new Error('Token 更新失敗，請重新登入');
   session.access_token = data.access_token;
   session.expiry = Date.now() + (data.expires_in - 60) * 1000;
   return data.access_token;
 }
 
-// ── GA4 API ───────────────────────────────────────────────
+// GA4 API
 app.post('/api/ga4/report', async (req, res) => {
   try {
     const token = await getValidToken(req);
     const payload = JSON.stringify(req.body);
-    const result = await httpsRequest('analyticsdata.googleapis.com',
-      `/v1beta/properties/${GA4_PROPERTY_ID}:runReport`, 'POST', {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      }, payload);
+    const result = await httpsRequest({
+      hostname: 'analyticsdata.googleapis.com',
+      path: `/v1beta/properties/${GA4_PROPERTY_ID}:runReport`,
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+    }, payload);
     res.json(result);
   } catch (e) { res.status(401).json({ error: e.message }); }
 });
 
-// ── Anthropic API Proxy ───────────────────────────────────
+// Anthropic API Proxy（解決 CORS 問題）
 app.post('/api/ask', async (req, res) => {
+  if (!ANTHROPIC_KEY) return res.status(500).json({ error: '請設定 ANTHROPIC_KEY 環境變數' });
   try {
-    const { messages, system } = req.body;
-    const payload = JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      system,
-      messages,
-    });
-    const result = await httpsRequest('api.anthropic.com', '/v1/messages', 'POST', {
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload),
+    const payload = JSON.stringify(req.body);
+    const result = await httpsRequest({
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
     }, payload);
     res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── 健康檢查 + 前端 ───────────────────────────────────────
 app.get('/health', (req, res) => {
   const session = getSession(req);
   res.json({ status: 'ok', loggedIn: !!(session && session.access_token), propertyId: GA4_PROPERTY_ID });
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
 app.listen(PORT, () => console.log(`GA4 分析後端啟動於 port ${PORT}`));
