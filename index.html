@@ -201,64 +201,67 @@ async function sendMessage() {
   area.appendChild(thinkWrap); area.scrollTop = area.scrollHeight;
 
   const today = new Date().toISOString().slice(0,10);
-  const system = `你是 GA4 資料分析助理，可以直接查詢真實 GA4 資料並解讀結果。
-GA4 Property ID：209293188，今天日期：${today}
 
-當使用者提問時，你必須：
-1. 判斷需要哪些 GA4 維度和指標
-2. 輸出一個 JSON 格式的 API request body，用 [Q] 和 [/Q] 包起來，例如：
-[Q]
-{"dimensions":[{"name":"date"}],"metrics":[{"name":"activeUsers"}],"dateRanges":[{"startDate":"${today}","endDate":"${today}"}]}
-[/Q]
-3. 系統會自動執行查詢並把真實資料顯示給使用者
-4. 根據真實資料結果提供分析和洞察
-
+  // 第一步：請 Claude 產生查詢語句
+  const systemStep1 = `你是 GA4 資料分析助理。今天日期：${today}，GA4 Property ID：209293188。
+使用者問問題時，你只需要輸出 GA4 API request body JSON，用 [Q] 和 [/Q] 包起來，不要加任何說明文字。
+例如：[Q]{"dimensions":[{"name":"date"}],"metrics":[{"name":"activeUsers"}],"dateRanges":[{"startDate":"${today}","endDate":"${today}"}]}[/Q]
 常用維度：date, pagePath, deviceCategory, country, city, sessionSource, sessionMedium, eventName
-常用指標：sessions, activeUsers, newUsers, screenPageViews, bounceRate, averageSessionDuration, conversions, eventCount
+常用指標：sessions, activeUsers, newUsers, screenPageViews, bounceRate, averageSessionDuration, conversions, eventCount`;
 
-重要：一定要輸出 [Q]...[/Q] 格式，否則無法查詢真實資料。使用繁體中文回答。`;
-
-  chatHistory.push({ role: 'user', content: q });
-
-  let reply = '';
+  let queryCode = '';
   try {
-    const res = await fetch('/api/ask', {
+    const r1 = await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, system, messages: chatHistory })
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, system: systemStep1, messages: [{ role: 'user', content: q }] })
     });
-    const data = await res.json();
-    reply = (data.content || []).map(c => c.text || '').join('') || '發生錯誤，請稍後再試。';
-  } catch(e) { reply = '連線錯誤：' + e.message; }
+    const d1 = await r1.json();
+    const r1text = (d1.content || []).map(c => c.text || '').join('');
+    const m1 = r1text.match(/\[Q\]([\s\S]*?)\[\/Q\]/);
+    if (m1) queryCode = m1[1].trim();
+  } catch(e) {}
 
-  chatHistory.push({ role: 'assistant', content: reply });
-  document.getElementById('thinking')?.remove();
-
-  // 擷取查詢語句
-  const m = reply.match(/\[Q\]([\s\S]*?)\[\/Q\]/);
-  let display = reply.replace(/\[Q\][\s\S]*?\[\/Q\]/g, '').trim();
+  // 第二步：執行 GA4 查詢取得真實資料
+  let ga4Data = null;
   let queryHtml = '';
   let resultHtml = '';
 
-  if (m) {
-    const code = m[1].trim();
-    queryHtml = `<div class="query-block"><div class="query-header"><span>GA4 查詢</span><button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(code)})">複製</button></div><div class="query-body">${code.replace(/</g,'&lt;')}</div></div>`;
-
-    // 自動呼叫 GA4 API
+  if (queryCode) {
+    queryHtml = `<div class="query-block"><div class="query-header"><span>GA4 查詢</span><button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(queryCode)})">複製</button></div><div class="query-body">${queryCode.replace(/</g,'&lt;')}</div></div>`;
     try {
       const ga4Res = await fetch('/api/ga4/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: code
+        body: queryCode
       });
-      const ga4Data = await ga4Res.json();
+      ga4Data = await ga4Res.json();
       resultHtml = `<div style="margin-top:10px"><span class="tag tag-data">真實資料</span>${formatGA4Result(ga4Data)}</div>`;
     } catch(e) {
       resultHtml = `<div style="margin-top:8px;font-size:12px;color:#f06060">查詢失敗：${e.message}</div>`;
     }
   }
 
-  addBubble('ai', `<span class="tag tag-ga4">GA4</span> ${display.replace(/\n/g,'<br>')}${queryHtml}${resultHtml}`);
+  // 第三步：把真實資料交給 Claude 解讀
+  const realDataStr = ga4Data ? JSON.stringify(ga4Data.rows ? ga4Data.rows.slice(0,20) : ga4Data) : '查無資料';
+  const systemStep2 = `你是 GA4 資料分析助理，請根據以下真實 GA4 查詢結果回答使用者問題，使用繁體中文，直接說出數字，不要猜測。真實資料：${realDataStr}`;
+
+  chatHistory.push({ role: 'user', content: q });
+  let reply = '';
+  try {
+    const r2 = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: systemStep2, messages: chatHistory })
+    });
+    const d2 = await r2.json();
+    reply = (d2.content || []).map(c => c.text || '').join('') || '發生錯誤，請稍後再試。';
+  } catch(e) { reply = '連線錯誤：' + e.message; }
+
+  chatHistory.push({ role: 'assistant', content: reply });
+  document.getElementById('thinking')?.remove();
+
+  addBubble('ai', `<span class="tag tag-ga4">GA4</span> ${reply.replace(/\n/g,'<br>')}${queryHtml}${resultHtml}`);
   btn.disabled = false;
 }
 
